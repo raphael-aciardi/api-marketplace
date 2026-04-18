@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -9,16 +13,32 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async create(createUserDto: CreateUserDto) {
-    const existingUser = await this.prisma.user.findUnique({
+    const existingUserByEmail = await this.prisma.user.findUnique({
       where: { email: createUserDto.email },
     });
 
-    if (existingUser) {
+    if (existingUserByEmail) {
       throw new ConflictException('Email already in use.');
     }
 
+    const existingUserByCpf = await this.prisma.user.findUnique({
+      where: { cpfCnpj: createUserDto.cpfCnpj },
+    });
+
+    if (existingUserByCpf) {
+      throw new ConflictException('CPF/CNPJ already in use.');
+    }
+
+    const existingUserByUsername = await this.prisma.user.findUnique({
+      where: { username: createUserDto.username },
+    });
+
+    if (existingUserByUsername) {
+      throw new ConflictException('Username already in use.');
+    }
+
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    
+
     const user = await this.prisma.user.create({
       data: {
         ...createUserDto,
@@ -31,7 +51,7 @@ export class UsersService {
 
   async findAll() {
     const users = await this.prisma.user.findMany();
-    return users.map(user => this.excludePassword(user));
+    return users.map((user) => this.excludePassword(user));
   }
 
   async findOne(id: number) {
@@ -57,7 +77,7 @@ export class UsersService {
     await this.findOne(id); // Ensure user exists
 
     const data: any = { ...updateUserDto };
-    
+
     if (updateUserDto.password) {
       data.password = await bcrypt.hash(updateUserDto.password, 10);
     }
@@ -68,6 +88,24 @@ export class UsersService {
       });
       if (existingUser && existingUser.id !== id) {
         throw new ConflictException('Email already in use by another user.');
+      }
+    }
+
+    if (updateUserDto.cpfCnpj) {
+      const existingUserByCpf = await this.prisma.user.findUnique({
+        where: { cpfCnpj: updateUserDto.cpfCnpj },
+      });
+      if (existingUserByCpf && existingUserByCpf.id !== id) {
+        throw new ConflictException('CPF/CNPJ already in use by another user.');
+      }
+    }
+
+    if (updateUserDto.username) {
+      const existingUserByUsername = await this.prisma.user.findUnique({
+        where: { username: updateUserDto.username },
+      });
+      if (existingUserByUsername && existingUserByUsername.id !== id) {
+        throw new ConflictException('Username already in use by another user.');
       }
     }
 

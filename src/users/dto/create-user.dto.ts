@@ -6,6 +6,14 @@ export class CreateUserDto {
   email: string;
 
   @IsString()
+  @IsNotEmpty()
+  username: string;
+
+  @IsString()
+  @IsNotEmpty()
+  cpfCnpj: string;
+
+  @IsString()
   @MinLength(6, { message: 'Password must be at least 6 characters long.' })
   @IsNotEmpty()
   password: string;
