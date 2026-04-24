@@ -20,5 +20,5 @@ yarn-error.log*
 .env.test
 
 # database
-*.db
-*.db-journal
+# *.db
+# *.db-journal
